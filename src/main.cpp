@@ -40,7 +40,7 @@ void openYoutubeLinux() {
         // Child process: Launch the browser
         execlp("google-chrome", "google-chrome",
                "--user-data-dir=/tmp/youtube_session",  // You can change the session directory
-               "--app=https://youtube.com",             // Change URL to YouTube
+               "--app=https://www.youtube.com/",             // Change URL to YouTube
                "--kiosk",
                "--disable-gpu",                        // Optional: helps reduce GPU warnings
                (char *)NULL);
@@ -94,6 +94,29 @@ void increaseVolume() {
 void decreaseVolume() {
     std::cout << "Decreasing volume..." << std::endl;
     system("xdotool key XF86AudioLowerVolume");
+}
+
+
+void openGmailLinux() {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        // Child process: Launch the browser
+        execlp("google-chrome", "google-chrome",
+               "--user-data-dir=/tmp/gmail_session",          // Session directory
+               "--app=https://mail.google.com/mail",          // Gmail URL
+               "--start-fullscreen",                          // Allows fullscreen with minimize
+               "--disable-gpu",                               // Optional GPU flag
+               (char *)NULL);
+
+        // If execlp fails
+        std::cerr << "Failed to launch browser\n";
+        exit(1);
+    } else if (pid < 0) {
+        std::cerr << "Fork failed\n";
+    } else {
+        std::cout << "Gmail should be launching in the background.\n";
+    }
 }
 
 
@@ -190,6 +213,37 @@ int main() {
                 system("pkill -f '/tmp/github_session'");
             #endif
         }
+        else if (clientMsg == "screenshot") {
+            std::cout << "Taking screenshot..." << std::endl;
+
+            // Save the screenshot to a file
+            system("gnome-screenshot -f ~/Desktop/screenshot.png");
+
+            server.sendData("Screenshot taken and saved to ~/Desktop/screenshot.png\n");
+        }
+        else if (clientMsg == "open gmail") {
+            std::cout << "Opening Gmail..." << std::endl;
+
+            #ifdef _WIN32
+                system("start https://www.github.com");
+            #elif __APPLE__
+                system("open https://www.github.com");
+            #elif __linux__
+                openGmailLinux();
+            #endif        
+            }
+        else if (clientMsg == "close gmail") {
+            std::cout << "Closing Gmail..." << std::endl;
+
+            #ifdef _WIN32
+                system("taskkill /F /IM chrome.exe");
+            #elif __APPLE__
+                system("pkill -f 'Google Chrome'");
+            #elif __linux__
+                system("pkill -f '/tmp/gmail_session'");
+            #endif
+        }
+
         else if (clientMsg == "exit") {
             std::cout << "Shutting down server." << std::endl;
             break; // Exit the loop and end the server
